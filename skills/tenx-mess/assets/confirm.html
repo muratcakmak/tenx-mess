@@ -1,0 +1,426 @@
+<title>tenx-mess</title>
+<style>
+:root{
+  --sf:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono:ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --bg:#F5F5F7; --tile:#FFFFFF; --ink:#1D1D1F; --ink2:#6E6E73; --ink3:#86868B; --hair:#D2D2D7; --fill:#E8E8ED;
+  --blue:#0071E3; --on-blue:#FFFFFF; --nav:rgba(245,245,247,.72);
+  --row:#F7F7F9; --line:#DCDCDF;
+  --green:#28A745; --orange:#C77700; --red:#D70015; --gain:#34C759; --used:#AEAEB2;
+  --t-finished:#28A745; --t-rebuildable:#0071E3; --t-review:#C77700; --t-keep:#86868B;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#000000; --tile:#161617; --ink:#F5F5F7; --ink2:#A1A1A6; --ink3:#86868B; --hair:#424245; --fill:#2C2C2E;
+    --blue:#0A84FF; --nav:rgba(22,22,23,.72); --row:#1D1D1F; --line:#38383A;
+    --green:#30D158; --orange:#FF9F0A; --red:#FF453A; --used:#48484A;
+    --t-finished:#30D158; --t-rebuildable:#0A84FF; --t-review:#FF9F0A; --t-keep:#8E8E93;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#000000; --tile:#161617; --ink:#F5F5F7; --ink2:#A1A1A6; --ink3:#86868B; --hair:#424245; --fill:#2C2C2E;
+  --blue:#0A84FF; --nav:rgba(22,22,23,.72); --row:#1D1D1F; --line:#38383A;
+  --green:#30D158; --orange:#FF9F0A; --red:#FF453A; --used:#48484A;
+  --t-finished:#30D158; --t-rebuildable:#0A84FF; --t-review:#FF9F0A; --t-keep:#8E8E93;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sf);font-size:16px;line-height:1.45;letter-spacing:-.016em;-webkit-font-smoothing:antialiased;padding-inline:16px;padding-block:0 120px}
+.w{max-width:860px;margin:0 auto}
+h1,h2,h3{margin:0;font-weight:600;text-wrap:balance}
+p{margin:0}
+code,.mono{font-family:var(--mono);letter-spacing:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 50%,transparent);outline-offset:2px}
+
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;margin-inline:-16px;padding-inline:16px;background:var(--nav);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--hair)}
+.nav .w{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.brand{display:flex;align-items:center;gap:9px;font-size:19px;font-weight:600}
+.brand svg{width:28px;height:28px}
+.meta{font-size:12px;color:var(--ink3);text-align:right;letter-spacing:0}
+
+.hero{display:grid;gap:10px;padding-block:32px 22px}
+.hero .k{font-size:14px;font-weight:600;color:var(--ink3)}
+.hero h1{font-size:clamp(32px,6vw,48px);line-height:1.06;letter-spacing:-.02em;font-weight:700;font-variant-numeric:tabular-nums}
+.hero h1 span{background:linear-gradient(100deg,#FF9F0A,#FF375F);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--fill);margin-top:6px}
+.bar span{height:100%}
+@media (prefers-reduced-motion:no-preference){.bar span{transition:flex-basis .3s ease}}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--ink2);letter-spacing:0}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+
+.card{background:var(--tile);border-radius:18px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
+.group+.group{border-top:1px solid var(--line)}
+.gh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px 8px}
+.gh h2{font-size:17px;display:flex;align-items:center;gap:8px}
+.gh h2::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--tc)}
+.gh small{font-size:13px;color:var(--ink3);font-weight:400}
+.gh .all{border:0;background:none;color:var(--blue);font-size:13px;padding:4px 0}
+.row{display:grid;grid-template-columns:22px 1fr auto;gap:12px;align-items:start;padding:10px 18px;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;accent-color:var(--blue)}
+.row .t{font-size:15px;word-break:break-word}
+.row .r{font-size:13px;color:var(--ink2);margin-top:1px}
+.row .sz{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row.locked .t{color:var(--ink2)}
+.row.locked .ck{width:18px;height:18px;border-radius:5px;border:1.5px dashed var(--hair);margin-top:2px}
+.seg{display:inline-flex;margin-top:7px;background:var(--fill);border-radius:8px;padding:2px;gap:2px}
+.seg button{border:0;background:none;color:var(--ink2);font-size:12px;padding:4px 10px;border-radius:6px}
+.seg button[aria-pressed=true]{background:var(--tile);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.more{border:0;background:none;color:var(--blue);font-size:14px;padding:10px 18px;width:100%;text-align:left;border-top:1px solid var(--line)}
+
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--nav);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--hair)}
+.dock .w{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dock b{font-size:20px;font-variant-numeric:tabular-nums}
+.dock span{display:block;font-size:12px;color:var(--ink2);letter-spacing:0}
+.btn{border:0;background:var(--blue);color:var(--on-blue);padding:11px 20px;border-radius:980px;font-size:16px;font-weight:500;white-space:nowrap}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.ghost{background:var(--fill);color:var(--ink)}
+
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);display:grid;place-items:end center}
+@media (min-width:700px){.scrim{place-items:center}}
+.sheet{width:min(640px,100%);max-height:92vh;display:grid;grid-template-rows:auto 1fr auto;background:var(--tile);border-radius:18px 18px 0 0;overflow:hidden}
+@media (min-width:700px){.sheet{border-radius:18px}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .25s ease-out}}
+@keyframes up{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+.sheet header{padding:20px 20px 12px;display:grid;gap:4px;border-bottom:1px solid var(--line)}
+.sheet header h3{font-size:20px}
+.sheet header p{font-size:14px;color:var(--ink2)}
+.steps{overflow:auto;padding:8px 20px 16px;display:grid;gap:12px;align-content:start}
+.step{display:grid;gap:4px}
+.step .h{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:600}
+.step .h span:last-child{font-variant-numeric:tabular-nums;color:var(--ink2);font-weight:500}
+.step pre{margin:0;padding:8px 10px;background:var(--row);border-radius:8px;font-family:var(--mono);font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-all;letter-spacing:0}
+.step .n{font-size:12px;color:var(--ink3)}
+.sheet footer{display:grid;gap:10px;padding:14px 20px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+.sheet label{font-size:14px;color:var(--ink2)}
+.sheet input{font-family:var(--mono);font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid var(--hair);background:var(--bg);color:var(--ink);width:100%}
+.sheet .row2{display:flex;gap:10px;justify-content:flex-end}
+.err{font-size:13px;color:var(--red)}
+
+.state{display:grid;gap:14px;justify-items:center;text-align:center;padding:48px 20px}
+.state .ic{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--fill)}
+.state .ic.ok{background:var(--gain)}
+.state h2{font-size:26px;letter-spacing:-.02em}
+.state p{color:var(--ink2);max-width:44ch}
+.state .cmd{font-family:var(--mono);font-size:15px;background:var(--fill);padding:6px 12px;border-radius:8px;color:var(--ink)}
+.res{display:grid;gap:0;text-align:left;width:100%;max-width:640px}
+.res div{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.res div:first-child{border-top:0}
+.res small{display:block;color:var(--ink2);font-size:12.5px}
+.spin{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--hair);border-top-color:var(--blue)}
+@media (prefers-reduced-motion:no-preference){.spin{animation:rot 1s linear infinite}}
+@keyframes rot{to{transform:rotate(360deg)}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="tx-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB340"/><stop offset=".5" stop-color="#FF6A3D"/><stop offset="1" stop-color="#FF2D6F"/></linearGradient>
+  </defs>
+  <symbol id="tx-logo" viewBox="0 0 512 512">
+    <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#tx-bg)"/>
+    <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M104 176 L140 150 V340" stroke-width="34"/>
+      <rect x="180" y="150" width="104" height="190" rx="52" stroke-width="34"/>
+      <path d="M322 236 L424 350" stroke-width="30"/>
+      <g transform="translate(360 312) rotate(40)"><path d="M0 -4 V-132" stroke-width="18"/><rect x="-24" y="-6" width="48" height="18" rx="5" fill="#fff" stroke="none"/><path d="M-22 14 H22 L38 70 H-38 Z" fill="#fff" stroke-width="6"/></g>
+    </g>
+    <g fill="#fff"><rect x="221" y="389" width="30" height="30" rx="6" transform="rotate(-14 236 404)"/><rect x="181" y="409" width="22" height="22" rx="5" opacity=".9"/><rect x="261" y="423" width="18" height="18" rx="4" opacity=".85"/></g>
+  </symbol>
+</svg>
+
+<nav class="nav" aria-label="tenx-mess">
+  <div class="w">
+    <span class="brand"><svg aria-hidden="true"><use href="#tx-logo"/></svg>tenx-mess</span>
+    <span class="meta" id="meta">Waiting for a scan</span>
+  </div>
+</nav>
+
+<main class="w" id="app">
+  <section class="state" id="boot">
+    <div class="spin" aria-hidden="true"></div>
+    <p>Loading the scan…</p>
+  </section>
+</main>
+
+<div class="dock" id="dock" hidden>
+  <div class="w">
+    <div><b id="selTotal">0 GB</b><span id="selSub">0 items selected</span></div>
+    <button type="button" class="btn" id="review">Review Plan</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <header><h3 id="sheetTitle">Plan</h3><p id="sheetSub"></p></header>
+    <div class="steps" id="steps"></div>
+    <footer>
+      <label for="typed">Type <b>clean</b> to approve these exact commands.</label>
+      <input id="typed" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="clean">
+      <div class="err" id="sheetErr" aria-live="polite"></div>
+      <div class="row2"><button type="button" class="btn ghost" id="cancel">Cancel</button><button type="button" class="btn" id="approve" disabled>Approve</button></div>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  var TIERS = [
+    { key: "finished", label: "Finished work", sub: "PR merged or shipped" },
+    { key: "rebuildable", label: "Rebuildable", sub: "tools refill these" },
+    { key: "review", label: "Needs your eyes", sub: "starts unselected" },
+    { key: "keep", label: "Kept", sub: "never cleaned" }
+  ];
+  var ACTION = {
+    worktree_remove: "Remove worktree", strip_deps: "Dependencies only", worktree_prune: "Prune records",
+    tool: "Tool cleaner", delete_dir: "Delete", simctl_erase: "Erase", simctl_delete_unavailable: "Delete",
+    kill: "Stop process"
+  };
+  var app = document.getElementById("app"), dock = document.getElementById("dock");
+  var db = null, isOwner = true, seed = null, approval = null, result = null;
+  var pick = {};  // id -> action or null
+  var KEEP_SHOWN = 4;
+
+  function h(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function gb(n) { n = n / 1e9; return (n >= 10 ? n.toFixed(0) : n.toFixed(1)) + " GB"; }
+  function size(n) { return n >= 1e9 ? gb(n) : n >= 1e6 ? (n / 1e6).toFixed(0) + " MB" : n > 0 ? (n / 1e3).toFixed(0) + " KB" : "–"; }
+  function bytesOf(it) { var a = pick[it.id]; return a && it.options[a] ? it.options[a].bytes : 0; }
+  function selected() {
+    var out = [];
+    TIERS.forEach(function (t) {
+      seed.items.forEach(function (it) { if (it.tier === t.key && pick[it.id]) out.push(it); });
+    });
+    return out;
+  }
+
+  function showState(icon, title, body, extra) {
+    dock.hidden = true;
+    app.textContent = "";
+    var s = h("section", "state");
+    var ic = h("div", "ic" + (icon === "ok" ? " ok" : ""));
+    if (icon === "spin") { ic = h("div", "spin"); }
+    else if (icon === "ok") { ic.innerHTML = '<svg width="30" height="30" viewBox="0 0 26 26" aria-hidden="true"><path d="M6 13.5l4.5 4.5L20 8" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+    else { ic.innerHTML = '<svg width="34" height="34" aria-hidden="true"><use href="#tx-logo"/></svg>'; }
+    s.appendChild(ic);
+    s.appendChild(h("h2", null, title));
+    if (body) s.appendChild(h("p", null, body));
+    if (extra) s.appendChild(extra);
+    app.appendChild(s);
+  }
+
+  function renderHero() {
+    var d = seed.disk, sel = selected().reduce(function (a, it) { return a + bytesOf(it); }, 0);
+    var hero = h("section", "hero");
+    hero.appendChild(h("span", "k", "Macintosh HD"));
+    var h1 = h("h1");
+    h1.appendChild(document.createTextNode(gb(d.free) + " free"));
+    if (sel) { h1.appendChild(document.createTextNode(" → ")); h1.appendChild(h("span", null, gb(d.free + sel))); }
+    hero.appendChild(h1);
+    var bar = h("div", "bar"), used = d.total - d.free - sel;
+    [[used, "var(--used)"], [sel, "var(--gain)"], [d.free, "transparent"]].forEach(function (p) {
+      var sp = h("span"); sp.style.flex = "0 0 " + (Math.max(0, p[0]) / d.total * 100) + "%"; sp.style.background = p[1]; bar.appendChild(sp);
+    });
+    hero.appendChild(bar);
+    var lg = h("div", "legend");
+    lg.innerHTML = '<span><i style="background:var(--used)"></i>Used</span><span><i style="background:var(--gain)"></i>Selected to clean</span><span><i style="background:var(--fill)"></i>Free</span>';
+    hero.appendChild(lg);
+    return hero;
+  }
+
+  function renderPicker() {
+    app.textContent = "";
+    app.appendChild(renderHero());
+    var card = h("section", "card");
+    TIERS.forEach(function (t) {
+      var list = seed.items.filter(function (it) { return it.tier === t.key; });
+      if (!list.length) return;
+      var g = h("div", "group"); g.style.setProperty("--tc", "var(--t-" + t.key + ")");
+      var gh = h("div", "gh"), h2 = h("h2", null, t.label + " ");
+      h2.appendChild(h("small", null, "· " + t.sub));
+      gh.appendChild(h2);
+      if (t.key !== "keep") {
+        var all = h("button", "all", "Select all"); all.type = "button";
+        all.addEventListener("click", function () {
+          var any = list.some(function (it) { return !pick[it.id] && it.default_action; });
+          list.forEach(function (it) { pick[it.id] = any ? (pick[it.id] || it.default_action) : null; });
+          renderPicker();
+        });
+        gh.appendChild(all);
+      } else {
+        gh.appendChild(h("small", null, gb(list.reduce(function (a, it) { return a + it.bytes; }, 0))));
+      }
+      g.appendChild(gh);
+      var shown = t.key === "keep" ? list.slice(0, KEEP_SHOWN) : list;
+      shown.forEach(function (it) { g.appendChild(renderRow(it, t.key === "keep")); });
+      if (shown.length < list.length) {
+        var more = h("button", "more", "Show " + (list.length - shown.length) + " more kept items"); more.type = "button";
+        more.addEventListener("click", function () {
+          list.slice(KEEP_SHOWN).forEach(function (it) { g.insertBefore(renderRow(it, true), more); });
+          more.remove();
+        });
+        g.appendChild(more);
+      }
+      card.appendChild(g);
+    });
+    app.appendChild(card);
+    if (seed.notes && seed.notes.length) {
+      var n = h("p", null, seed.notes.join(" · ")); n.style.cssText = "font-size:13px;color:var(--ink2);padding:14px 4px"; app.appendChild(n);
+    }
+    updateDock();
+  }
+
+  function renderRow(it, locked) {
+    var opts = Object.keys(it.options);
+    var row = h("div", "row" + (locked || !opts.length ? " locked" : ""));
+    if (locked || !opts.length) { row.appendChild(h("span", "ck")); }
+    else {
+      var cb = h("input"); cb.type = "checkbox"; cb.id = "pick-" + it.id; cb.checked = !!pick[it.id];
+      cb.setAttribute("aria-label", it.title);
+      cb.addEventListener("change", function () { pick[it.id] = cb.checked ? (it.default_action || opts[0]) : null; renderPicker(); });
+      row.appendChild(cb);
+    }
+    var mid = h("div");
+    mid.appendChild(h("div", "t", it.title));
+    mid.appendChild(h("div", "r", it.reason));
+    if (!locked && opts.length > 1 && pick[it.id]) {
+      var seg = h("div", "seg");
+      opts.forEach(function (a) {
+        var b = h("button", null, ACTION[a] || a); b.type = "button";
+        b.setAttribute("aria-pressed", String(pick[it.id] === a));
+        b.addEventListener("click", function () { pick[it.id] = a; renderPicker(); });
+        seg.appendChild(b);
+      });
+      mid.appendChild(seg);
+    }
+    row.appendChild(mid);
+    row.appendChild(h("div", "sz", size(pick[it.id] ? bytesOf(it) : it.bytes)));
+    return row;
+  }
+
+  function updateDock() {
+    var sel = selected(), total = sel.reduce(function (a, it) { return a + bytesOf(it); }, 0);
+    document.getElementById("selTotal").textContent = "Up to " + gb(total);
+    document.getElementById("selSub").textContent = sel.length + (sel.length === 1 ? " item" : " items") + " selected";
+    var rv = document.getElementById("review");
+    rv.disabled = !sel.length || !isOwner;
+    rv.textContent = isOwner ? "Review Plan" : "Only the owner can approve";
+    dock.hidden = false;
+  }
+
+  // ---- gate two ----
+  var scrim = document.getElementById("scrim"), typed = document.getElementById("typed"),
+      approveBtn = document.getElementById("approve"), sheetErr = document.getElementById("sheetErr");
+  function planOf() {
+    var sel = selected(), steps = [], commands = [];
+    sel.forEach(function (it) {
+      var a = pick[it.id], o = it.options[a];
+      steps.push({ it: it, action: a, o: o });
+      o.commands.forEach(function (c) { commands.push(c); });
+    });
+    return { steps: steps, commands: commands };
+  }
+  function openSheet() {
+    var p = planOf(), total = p.steps.reduce(function (a, s) { return a + s.o.bytes; }, 0);
+    document.getElementById("sheetTitle").textContent = "Clean " + p.steps.length + (p.steps.length === 1 ? " item" : " items") + ", up to " + gb(total);
+    document.getElementById("sheetSub").textContent = "These are the exact commands. Claude checks each item again right before it runs.";
+    var box = document.getElementById("steps"); box.textContent = "";
+    p.steps.forEach(function (s, i) {
+      var st = h("div", "step"), hd = h("div", "h");
+      hd.appendChild(h("span", null, (i + 1) + ". " + s.it.title));
+      hd.appendChild(h("span", null, size(s.o.bytes)));
+      st.appendChild(hd);
+      st.appendChild(h("pre", null, s.o.commands.map(function (c) { return "$ " + c; }).join("\n")));
+      if (s.o.note) st.appendChild(h("div", "n", s.o.note));
+      box.appendChild(st);
+    });
+    typed.value = ""; approveBtn.disabled = true; sheetErr.textContent = "";
+    scrim.hidden = false; typed.focus();
+  }
+  function closeSheet() { scrim.hidden = true; document.getElementById("review").focus(); }
+  document.getElementById("review").addEventListener("click", openSheet);
+  document.getElementById("cancel").addEventListener("click", closeSheet);
+  scrim.addEventListener("click", function (e) { if (e.target === scrim) closeSheet(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !scrim.hidden) closeSheet(); });
+  typed.addEventListener("input", function () { approveBtn.disabled = typed.value.trim().toLowerCase() !== "clean"; });
+  typed.addEventListener("keydown", function (e) { if (e.key === "Enter" && !approveBtn.disabled) approveBtn.click(); });
+  approveBtn.addEventListener("click", function () {
+    var p = planOf();
+    approveBtn.disabled = true;
+    var body = {
+      nonce: seed.nonce, typed: "clean", approvedAt: new Date().toISOString(),
+      selection: p.steps.map(function (s) { return { id: s.it.id, action: s.action }; }),
+      commands: p.commands
+    };
+    db.doc("tenx/approval").set(body).then(function () {
+      scrim.hidden = true; approval = body; render();
+    }, function (e) {
+      approveBtn.disabled = false;
+      sheetErr.textContent = e && e.code === "invalid_argument"
+        ? "Only the owner of this page can approve a plan."
+        : "The approval did not save. Try again.";
+    });
+  });
+
+  // ---- states ----
+  function render() {
+    if (!seed) { showState("logo", "No scan yet", "Ask Claude to run /tenx-mess. The scan appears here when it is done."); return; }
+    var when = seed.created.replace(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2}).*/, "$3.$2.$1 $4:$5");
+    document.getElementById("meta").textContent = "Scan " + when;
+    if (result && result.nonce === seed.nonce) { renderResult(); return; }
+    if (approval && approval.nonce === seed.nonce) {
+      var cmd = h("span", "cmd", "done");
+      showState("spin", "Approved", "Go back to Claude and reply done. Claude checks your approval against the script, runs it, and the result shows here.", cmd);
+      return;
+    }
+    renderPicker();
+  }
+  function renderResult() {
+    var freed = Math.max(0, result.free_after - result.free_before);
+    var done = result.results.filter(function (r) { return r.status === "done"; }).length;
+    var list = h("div", "res");
+    result.results.forEach(function (r) {
+      var row = h("div"), mark = h("span", null, r.status === "done" ? "✓" : r.status === "skipped" ? "–" : "✗");
+      mark.style.color = r.status === "done" ? "var(--green)" : r.status === "skipped" ? "var(--ink3)" : "var(--red)";
+      var t = h("span", null, r.title);
+      if (r.reason) t.appendChild(h("small", null, r.reason));
+      row.appendChild(mark); row.appendChild(t); list.appendChild(row);
+    });
+    showState("ok", gb(freed) + " freed", done + " of " + result.results.length + " steps done. Free space went from " + gb(result.free_before) + " to " + gb(result.free_after) + ".", list);
+  }
+
+  function initPicks() {
+    pick = {};
+    seed.items.forEach(function (it) {
+      pick[it.id] = (it.tier === "finished" || it.tier === "rebuildable") ? it.default_action : null;
+    });
+  }
+
+  window.claude && window.claude.use("user").then(function (u) {
+    if (!u) return;
+    u.isOwner().then(function (o) { isOwner = o; if (seed && !dock.hidden) updateDock(); });
+  });
+
+  if (!window.claude) { showState("logo", "Open this page on claude.ai", "The confirmation page needs its database, which only works inside the claude.ai viewer."); return; }
+  window.claude.use("db").then(function (d) {
+    if (!d) { showState("logo", "The database is not available", "Open this page on claude.ai while signed in as its owner."); return; }
+    db = d;
+    var first = true;
+    db.doc("tenx/seed").onSnapshot(function (snap) {
+      var next = snap.exists ? snap.data() : null;
+      var changed = !seed || !next || next.nonce !== seed.nonce;
+      seed = next;
+      if (seed && changed) initPicks();
+      if (changed || first) { first = false; render(); }
+    }, function () { showState("logo", "The scan could not load", "Reload the page to try again."); });
+    db.doc("tenx/approval").onSnapshot(function (snap) {
+      approval = snap.exists ? snap.data() : null;
+      if (seed && scrim.hidden) render();
+    });
+    db.doc("tenx/result").onSnapshot(function (snap) {
+      result = snap.exists ? snap.data() : null;
+      if (seed) render();
+    });
+  });
+})();
+</script>

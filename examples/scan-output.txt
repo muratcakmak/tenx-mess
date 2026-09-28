@@ -35,7 +35,7 @@ KEEP · 19.7 GB · never enters a plan
                               changed 0 days ago
   wt-3956f1         335.5 MB  [agent] ~/Repos/tv-app/.claude/worktrees/wf_5e21a0c4-118-2
                               locked worktree
-  agent-claude      448.5 MB  Agent session data
+  agent-claude      448.5 MB  Claude Code session data
                               resume, rewind and memory need it; tenx-mess never deletes it
 
 ---

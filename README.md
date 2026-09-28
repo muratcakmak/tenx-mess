@@ -5,7 +5,7 @@
 <h1 align="center">tenx-mess</h1>
 
 <p align="center"><b>Your agents ship at 10x speed and leave a 10x mess.</b><br>
-An agent skill that finds what they left on your Mac and deletes it only after you approve twice.</p>
+A Claude Code skill that finds what they left on your Mac and deletes it only after you approve twice.</p>
 
 ---
 
@@ -19,7 +19,7 @@ A normal Mac cleaner sees folder sizes. tenx-mess reads the context around each 
 
 | Detector | Looks at | Offers |
 | --- | --- | --- |
-| Worktrees | Every linked worktree, including agent worktrees in `.claude/worktrees` | Remove the worktree, or remove only its dependency folders |
+| Worktrees | Every linked worktree, including Claude Code `.claude/worktrees` | Remove the worktree, or remove only its dependency folders |
 | Dormant checkouts | Repos with no activity for 60 days that still hold `node_modules`, `Pods`, `.venv`, ... | Remove dependency folders |
 | Xcode | DerivedData for deleted or idle projects, old DeviceSupport, big or unavailable simulators | Delete, erase |
 | Caches | npm, pnpm, Yarn, bun, CocoaPods, Homebrew, Gradle, pip, uv, SwiftPM, Go, Cargo, Playwright, Metro | The tool's own cleaner where one exists |
@@ -31,12 +31,24 @@ Each item lands in a tier: **finished** (PR merged), **rebuildable** (a tool rec
 ## How the confirmation works
 
 1. **Scan.** `scan.py` measures everything and writes a JSON report. It changes nothing.
-2. **Gate one.** Claude explains the findings and asks what to clean, one multi-select question per tier. Review items start unselected.
-3. **Gate two.** `clean.py plan` prints every exact command and a plan ID. You reply `clean` to run it. Any other reply cancels.
+2. **Pick.** You choose what to clean. Finished and rebuildable items start selected. Review items start unselected.
+3. **Approve.** You see every exact command and type `clean` to approve them.
 4. **Run.** `clean.py run` checks each item again and runs only the approved plan. A worktree that gained changes since the scan is skipped.
 5. **Log.** Every run writes a manifest with each path, branch and commit SHA, so any removed worktree can come back.
 
-See [`examples/scan-output.txt`](examples/scan-output.txt) for a full session.
+### On a confirmation page
+
+When Claude Code can publish artifacts, steps 2 and 3 happen on a private claude.ai page. It lists every item with its size and reason, lets you switch between removing a worktree and removing only its dependencies, and shows the plan as a sheet with the exact commands. It also works on a phone, which helps when Claude Code runs on a headless Mac over SSH.
+
+The page never runs anything. It writes your approval to the page's own database, and only you, the owner, can write there. Claude then runs `clean.py plan --approval`, which refuses the approval unless its commands match, character for character, what the script would run. When the run ends, the result shows on the page.
+
+The page holds your repo paths and branch names, and it stays private to you. The template is [`assets/confirm.html`](skills/tenx-mess/assets/confirm.html) and contains no data.
+
+### In the terminal
+
+Without artifacts, Claude asks one multi-select question per tier, prints the plan from `clean.py plan`, and waits for you to reply `clean`. Any other reply cancels.
+
+See [`examples/scan-output.txt`](examples/scan-output.txt) for a full terminal session.
 
 ## Safety
 
@@ -48,7 +60,7 @@ See [`examples/scan-output.txt`](examples/scan-output.txt) for a full session.
 
 ## Install
 
-As a plugin:
+As a Claude Code plugin:
 
 ```
 /plugin marketplace add muratcakmak/tenx-mess
@@ -66,7 +78,7 @@ Needs macOS, Python 3 (ships with the Xcode command line tools), and git. `gh` i
 
 ## Use
 
-Ask your agent something like:
+Ask Claude Code something like:
 
 - "My disk is full, clean up after the agents"
 - "Remove old worktrees"

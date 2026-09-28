@@ -14,6 +14,19 @@ Two steps, so what runs is what you approved:
 Selection: item IDs from scan.py, each with an optional ":action".
   --tiers finished,rebuildable   selects every item in those tiers
 Commands come from this file, never from the report.
+
+Confirmation page (an artifact the user approves on any device):
+
+  clean.py preview --out seed.json
+      Writes every item with the exact commands of each allowed action.
+      The page shows these and records the user's approval.
+
+  clean.py plan --approval approval.json
+      Builds the plan from the approved selection and refuses unless its
+      commands match the approved commands exactly.
+
+  clean.py result
+      Prints the last run's outcome as JSON for the page.
 """
 
 import argparse
@@ -277,18 +290,9 @@ def load_report(path):
     return json.loads(Path(p).read_text()), p
 
 
-def cmd_plan(args, cfg):
-    report, rpath = load_report(args.report)
+def build_steps(report, rpath, picks, cfg):
+    """Turn (item id, action or None) picks into steps. Returns (steps, problems)."""
     items = {i["id"]: i for i in report["items"]}
-    picks = []
-    if args.tiers:
-        tiers = set(args.tiers.split(","))
-        picks += [(i["id"], None) for i in report["items"]
-                  if i["tier"] in tiers and i["default_action"] and i["tier"] not in ("keep", "report")]
-    for token in filter(None, (args.select or "").split(",")):
-        iid, _, action = token.strip().partition(":")
-        picks.append((iid, action or None))
-
     steps, problems, seen = [], [], set()
     for iid, action in picks:
         if iid in seen:
@@ -305,20 +309,74 @@ def cmd_plan(args, cfg):
             steps.append(build_step(item, action or item["default_action"], cfg))
         except Refused as exc:
             problems.append("%s: %s" % (iid, exc))
+    return steps, problems
 
+
+def flat_commands(steps):
+    return [cmd for s in steps for cmd in s["commands"]]
+
+
+def check_approval(approval, rpath):
+    """The approval must come from the current preview and carry the typed confirmation."""
+    seed_path = c.STATE_DIR / "seed.json"
+    if not seed_path.exists():
+        raise Refused("no preview found; run clean.py preview first")
+    seed = json.loads(seed_path.read_text())
+    if approval.get("nonce") != seed["nonce"]:
+        raise Refused("approval is for preview %s, the current preview is %s"
+                      % (approval.get("nonce"), seed["nonce"]))
+    if os.path.realpath(seed["report"]) != os.path.realpath(str(rpath)):
+        raise Refused("the preview was made from a different scan report")
+    if str(approval.get("typed", "")).strip().lower() != "clean":
+        raise Refused("approval does not carry the typed word clean")
+    return [(x["id"], x.get("action")) for x in approval.get("selection", [])]
+
+
+def cmd_plan(args, cfg):
+    report, rpath = load_report(args.report)
+    picks = []
+    approval = None
+    if args.approval:
+        approval = json.loads(Path(args.approval).read_text())
+        try:
+            picks = check_approval(approval, rpath)
+        except Refused as exc:
+            print("tenx-mess: approval refused: %s" % exc)
+            return 1
+    if args.tiers:
+        tiers = set(args.tiers.split(","))
+        picks += [(i["id"], None) for i in report["items"]
+                  if i["tier"] in tiers and i["default_action"] and i["tier"] not in ("keep", "report")]
+    for token in filter(None, (args.select or "").split(",")):
+        iid, _, action = token.strip().partition(":")
+        picks.append((iid, action or None))
+
+    steps, problems = build_steps(report, rpath, picks, cfg)
     if not steps:
         print("tenx-mess: nothing to plan.")
         for p in problems:
             print("  skipped " + p)
         return 1
+    if approval is not None:
+        if problems:
+            print("tenx-mess: approval refused: some approved items cannot be planned:")
+            for p in problems:
+                print("  " + p)
+            return 1
+        if flat_commands(steps) != list(approval.get("commands", [])):
+            print("tenx-mess: approval refused: the commands differ from the ones you approved.")
+            print("Make a new preview and approve again.")
+            return 1
 
     body = json.dumps(steps, sort_keys=True)
     plan_id = hashlib.sha256(body.encode()).hexdigest()[:8]
-    plan = {"id": plan_id, "created": time.time(), "report": str(rpath), "steps": steps}
+    plan = {"id": plan_id, "created": time.time(), "report": str(rpath), "steps": steps,
+            "approved_on_page": approval is not None}
     c.write_json(c.PLAN_DIR / ("%s.json" % plan_id), plan)
 
     total = sum(s["bytes"] for s in steps)
-    print("tenx-mess plan %s · %d steps · up to %s · nothing has run yet" % (plan_id, len(steps), c.human(total)))
+    status = "approved on the page" if approval is not None else "nothing has run yet"
+    print("tenx-mess plan %s · %d steps · up to %s · %s" % (plan_id, len(steps), c.human(total), status))
     print("")
     for n, s in enumerate(steps, 1):
         print("%2d. %-16s %9s  %s" % (n, s["id"], c.human(s["bytes"]), s["title"]))
@@ -331,6 +389,70 @@ def cmd_plan(args, cfg):
     print("")
     print("Every step is checked again right before it runs. To run: clean.py run --plan %s" % plan_id)
     return 0
+
+
+def cmd_preview(args, cfg):
+    """Every item with the exact commands of each allowed action, for the confirmation page."""
+    report, rpath = load_report(args.report)
+    nonce = hashlib.sha256(("%s|%s" % (rpath, time.time())).encode()).hexdigest()[:10]
+    items = []
+    for item in report["items"]:
+        options = {}
+        if item["tier"] not in ("keep", "report"):
+            for action in item["actions"]:
+                try:
+                    st = build_step(item, action, cfg)
+                except Refused:
+                    continue
+                options[action] = {"commands": st["commands"], "note": st.get("note", ""),
+                                   "bytes": st["bytes"]}
+        m = item.get("meta", {})
+        items.append({
+            "id": item["id"], "kind": item["kind"], "tier": item["tier"], "title": item["title"],
+            "reason": item["reason"], "bytes": item["bytes"],
+            "default_action": item["default_action"] if item["default_action"] in options else None,
+            "options": options,
+            "branch": m.get("branch"), "agent": bool(m.get("agent")),
+        })
+    seed = {"nonce": nonce, "created": report["created"], "report": str(rpath),
+            "disk": report["disk"], "notes": report.get("notes", []), "items": items}
+    c.write_json(c.STATE_DIR / "seed.json", seed)
+    if args.out:
+        c.write_json(Path(args.out), seed)
+        print("tenx-mess preview %s · %d items · written to %s" % (nonce, len(items), args.out))
+    else:
+        print(json.dumps(seed))
+    return 0
+
+
+def cmd_result(args, cfg):
+    """The last run's outcome as JSON, for the confirmation page."""
+    logs = sorted(c.LOG_DIR.glob("clean-*.json"))
+    if not logs:
+        print("tenx-mess: no run log yet.")
+        return 1
+    log = json.loads(logs[-1].read_text())
+    seed_path = c.STATE_DIR / "seed.json"
+    nonce = json.loads(seed_path.read_text())["nonce"] if seed_path.exists() else None
+    out = {"nonce": nonce, "plan": log["plan"], "finished": log["finished"],
+           "free_before": log["free_before"], "free_after": log["free_after"],
+           "log": tilde(logs[-1]),
+           "results": [{"id": r["id"], "title": r["title"], "action": r["action"],
+                        "status": r["status"], "reason": r["reason"]} for r in log["results"]]}
+    print(json.dumps(out))
+    return 0
+
+
+def cmd_page_url(args, cfg):
+    """Remember the confirmation page's URL so every run reuses one link."""
+    path = c.STATE_DIR / "page.json"
+    if args.set:
+        c.write_json(path, {"url": args.set})
+    if path.exists():
+        print(json.loads(path.read_text())["url"])
+        return 0
+    print("tenx-mess: no confirmation page yet.")
+    return 1
 
 
 def cmd_run(args, cfg):
@@ -393,11 +515,20 @@ def main():
     p.add_argument("--report", default="latest", help="scan report path (default: latest)")
     p.add_argument("--select", help="comma-separated item IDs, each with an optional :action")
     p.add_argument("--tiers", help="select every item in these tiers, e.g. finished,rebuildable")
+    p.add_argument("--approval", help="approval JSON from the confirmation page")
     r = sub.add_parser("run", help="run a plan made by `plan`")
     r.add_argument("--plan", required=True, help="plan ID printed by `plan`")
+    v = sub.add_parser("preview", help="write items and exact commands for the confirmation page")
+    v.add_argument("--report", default="latest", help="scan report path (default: latest)")
+    v.add_argument("--out", help="write the preview to this file instead of stdout")
+    sub.add_parser("result", help="print the last run's outcome as JSON")
+    u = sub.add_parser("page-url", help="print or remember the confirmation page URL")
+    u.add_argument("--set", help="the artifact URL to remember")
     args = ap.parse_args()
     cfg = c.load_config()
-    sys.exit(cmd_plan(args, cfg) if args.cmd == "plan" else cmd_run(args, cfg))
+    handlers = {"plan": cmd_plan, "run": cmd_run, "preview": cmd_preview,
+                "result": cmd_result, "page-url": cmd_page_url}
+    sys.exit(handlers[args.cmd](args, cfg))
 
 
 if __name__ == "__main__":

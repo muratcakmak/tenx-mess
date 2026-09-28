@@ -1,6 +1,6 @@
 ---
 name: tenx-mess
-description: Finds and cleans the disk mess that agentic coding leaves on a Mac: leftover git worktrees (including agent worktrees in .claude/worktrees), node_modules and Pods in idle worktrees, Xcode DerivedData, simulators, DeviceSupport, package manager caches (npm, pnpm, bun, Yarn, CocoaPods, Homebrew, Gradle, pip, uv) and orphaned dev servers. Deletes only after two user confirmations. Use when the user says "free up disk space", "clean my mac", "disk is full", "remove old worktrees", "DerivedData is huge", "what is eating my disk", or when a build or install fails with ENOSPC or "No space left on device".
+description: Finds and cleans the disk mess that agentic coding leaves on a Mac: leftover git worktrees (including Claude Code .claude/worktrees), node_modules and Pods in idle worktrees, Xcode DerivedData, simulators, DeviceSupport, package manager caches (npm, pnpm, bun, Yarn, CocoaPods, Homebrew, Gradle, pip, uv) and orphaned dev servers. Deletes only after two user confirmations. Use when the user says "free up disk space", "clean my mac", "disk is full", "remove old worktrees", "DerivedData is huge", "what is eating my disk", or when a build or install fails with ENOSPC or "No space left on device".
 ---
 
 # tenx-mess
@@ -12,10 +12,10 @@ The scripts live in `scripts/` next to this file. Run them with `python3`. They 
 ## Hard rules
 
 1. Delete only through `scripts/clean.py run`. Never delete, move or `git worktree remove` a scan target with your own Bash commands, even if the user asks you to be quick.
-2. Never add `--force` to anything. Never edit files in `~/.tenx-mess/`.
+2. Never add `--force` to anything. Never edit files in `~/.tenx-mess/` yourself; only the scripts write there.
 3. Items in the `keep` and `report` tiers never go into a plan. If the user wants one gone, explain why it is kept and let them delete it by hand.
-4. Never run `clean.py run` in the same turn as `clean.py plan`. The user must answer between them.
-5. Never delete `~/.claude/projects` or other agent state. Resume and memory need it.
+4. Never run `clean.py run` in the same turn as `clean.py plan`, except after `plan --approval` succeeds (the user already approved those exact commands on the confirmation page). Never write the approval yourself; only the page writes it.
+5. Never delete `~/.claude/projects` or other Claude Code state. Resume and memory need it.
 
 ## Flow
 
@@ -39,7 +39,35 @@ Give the user a short summary before any question:
 
 Keep it to a few lines. The tier table in the scan output already has the detail.
 
-### 3. Gate one: pick items
+### 3. Choose where the user confirms
+
+- **Confirmation page** (preferred): when the Artifact and ArtifactData tools are available. The user picks items and approves the exact commands on a claude.ai page, which also works on a phone when Claude Code runs on a headless Mac over SSH. Follow "Confirmation page" below, then skip to step 6.
+- **Terminal**: when those tools are missing, or the user asks to stay in the terminal. Follow steps 3a and 4.
+
+### Confirmation page
+
+1. Write the preview. It holds every item and the exact commands of each allowed action:
+
+   ```bash
+   python3 <skill-dir>/scripts/clean.py preview --out <scratch-dir>/tenx-seed.json
+   ```
+
+2. Find the page: `python3 <skill-dir>/scripts/clean.py page-url`. If it prints no URL, publish `<skill-dir>/assets/confirm.html` with the Artifact tool, with `icon: "disk"` and `capabilities: {"db": {"rules": [{"path": "", "read": "view", "write": "owner"}]}}`, then save the URL with `clean.py page-url --set <url>`. Reuse the saved page on every later run, so the user keeps one link.
+3. With ArtifactData `batch` on that URL: `set` collection `tenx`, doc `seed` from the preview file (`file_path`), and `delete` the docs `tenx/approval` and `tenx/result`.
+4. The first time, tell the user that the page is private to them and holds their repo paths and branch names. Then give the link and end your turn with:
+
+   > Open the page, pick what to clean, review the plan and type `clean` to approve it. Then reply `done` here.
+
+5. When the user replies `done`: read `tenx/approval` with ArtifactData `get` and `out_dir`, then run
+
+   ```bash
+   python3 <skill-dir>/scripts/clean.py plan --approval <out_dir>/tenx/approval.json
+   ```
+
+   The script refuses an approval from an older preview, one without the typed word `clean`, or one whose commands differ from what it would run. If it refuses, tell the user why and write a new preview. If it succeeds, run `clean.py run --plan <id>` in the same turn.
+6. Publish the result to the page: `python3 <skill-dir>/scripts/clean.py result > <scratch-dir>/tenx-result.json`, then ArtifactData `set` `tenx/result` from that file. Continue with step 6 in the chat as well.
+
+### 3a. Gate one in the terminal: pick items
 
 Use AskUserQuestion with `multiSelect: true`, one question per tier that has items, in this order: finished, rebuildable, review. Each question takes 2 to 4 options, so group items:
 
@@ -51,7 +79,7 @@ In the question text, say that finished and rebuildable items are the safe ones 
 
 If the user already named what to clean ("just clear the caches"), skip the question and go straight to gate two with that selection.
 
-### 4. Gate two: approve the exact plan
+### 4. Gate two in the terminal: approve the exact plan
 
 ```bash
 python3 <skill-dir>/scripts/clean.py plan --select <id>[:action],<id>...

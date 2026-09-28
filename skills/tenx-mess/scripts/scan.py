@@ -455,7 +455,7 @@ def scan_agents():
     sizes = c.du_many([str(p) for p in paths])
     return [{
         "id": "agent-claude", "kind": "agent_state", "tier": "keep",
-        "title": "Agent session data", "path": str(c.expand("~/.claude")),
+        "title": "Claude Code session data", "path": str(c.expand("~/.claude")),
         "bytes": sum(sizes.values()),
         "reason": "resume, rewind and memory need it; tenx-mess never deletes it",
         "actions": [], "default_action": None,

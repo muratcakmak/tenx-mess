@@ -196,6 +196,50 @@ class EndToEndTests(unittest.TestCase):
         self.assertNotIn("strip_deps", item["actions"])
         self.assertTrue((outside / "keep.txt").exists())
 
+    def approval_for(self, item_id):
+        """What the confirmation page writes after the user approves one item."""
+        self.s.py("clean.py", "preview", "--out", str(self.s.home / "seed-out.json"))
+        seed = json.loads((self.s.home / ".tenx-mess" / "seed.json").read_text())
+        item = next(i for i in seed["items"] if i["id"] == item_id)
+        action = item["default_action"]
+        return {"nonce": seed["nonce"], "typed": "clean",
+                "selection": [{"id": item_id, "action": action}],
+                "commands": item["options"][action]["commands"]}
+
+    def plan_with(self, approval):
+        path = self.s.home / "approval.json"
+        path.write_text(json.dumps(approval))
+        return self.s.py("clean.py", "plan", "--approval", str(path), check=False)
+
+    def test_page_approval_with_matching_commands_plans(self):
+        self.s.worktree("page-ok", merged=True)
+        item = self.s.report()["page-ok"]
+        out = self.plan_with(self.approval_for(item["id"]))
+        self.assertEqual(out.returncode, 0, out.stdout)
+        self.assertIn("approved on the page", out.stdout)
+
+    def test_page_approval_with_other_commands_is_refused(self):
+        self.s.worktree("page-edit", merged=True)
+        item = self.s.report()["page-edit"]
+        approval = self.approval_for(item["id"])
+        approval["commands"] = ["rm -rf ~"]
+        out = self.plan_with(approval)
+        self.assertNotEqual(out.returncode, 0)
+        self.assertIn("differ", out.stdout)
+
+    def test_stale_or_untyped_page_approval_is_refused(self):
+        self.s.worktree("page-stale", merged=True)
+        item = self.s.report()["page-stale"]
+        approval = self.approval_for(item["id"])
+        untyped = self.plan_with(dict(approval, typed=""))
+        self.assertNotEqual(untyped.returncode, 0)
+        self.assertIn("clean", untyped.stdout)
+        old = dict(approval)
+        self.approval_for(item["id"])  # a new preview makes the old approval stale
+        out = self.plan_with(old)
+        self.assertNotEqual(out.returncode, 0)
+        self.assertIn("current preview", out.stdout)
+
     def test_keep_tier_cannot_be_planned(self):
         self.s.worktree("fresh", merged=False)
         gitdir = self.s.git("-C", str(self.s.repos / "app.worktrees" / "fresh"), "rev-parse", "--absolute-git-dir").strip()

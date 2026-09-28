@@ -1,6 +1,6 @@
 {
   "name": "tenx-mess",
-  "description": "Agent skill that cleans up after coding agents on macOS.",
+  "description": "Claude Code skill that cleans up after coding agents on macOS.",
   "owner": {
     "name": "Oguzhan Cakmak"
   },

@@ -1,0 +1,80 @@
+tenx-mess scan · 11.8 GB free of 245.1 GB · report ~/.tenx-mess/reports/scan-20260928-101500.json
+
+FINISHED · 10.0 GB · work that shipped or was abandoned; selected by default
+  wt-e0b479           3.3 GB  ~/Repos/shop-app.worktrees/fix-checkout-sheet
+                              PR #212 merged, no local changes → worktree_remove
+  wt-0b3c39           3.3 GB  ~/Repos/shop-app.worktrees/spike-home-review
+                              PR #198 merged, 1 uncommitted file, so only dependencies go → strip_deps (3.2 GB)
+  wt-689c00           3.3 GB  ~/Repos/shop-app.worktrees/video-dock
+                              PR #187 merged, no local changes → worktree_remove
+
+REBUILDABLE · 15.1 GB · tools recreate these on the next build or install; selected by default
+  cache-gradle        6.4 GB  Gradle caches
+                              rebuilt on next install → delete_dir
+  cache-bun           2.4 GB  bun cache
+                              rebuilt on next install; cleaned with `bun pm cache rm` → tool
+  cache-cocoapods     2.3 GB  CocoaPods cache
+                              rebuilt on next install; cleaned with `pod cache clean --all` → tool
+  cache-npm           1.7 GB  npm cache
+                              rebuilt on next install; cleaned with `npm cache clean --force` → tool
+
+REVIEW · 21.4 GB · your call; starts unselected
+  wt-8154bd           3.3 GB  ~/Repos/shop-app.worktrees/video-followup
+                              PR #176 closed without merge, no local changes, idle 56 days → worktree_remove
+  wt-f997e1           3.3 GB  ~/Repos/shop-app.worktrees/tracker-cards
+                              no PR, no local changes, idle 50 days → strip_deps (3.2 GB)
+  wt-fe7127           3.3 GB  ~/Repos/shop-app.worktrees/upcoming-events
+                              no commits beyond origin/main, 20 uncommitted files, idle 50 days → strip_deps (3.2 GB)
+  sim-66aaef          2.7 GB  Simulator iPhone 17 (iOS-27-0)
+                              erase removes apps and data, keeps the device → simctl_erase
+  proc-2a91c0            0 B  node on port 8081 (pid 41822)
+                              parent exited, so nothing will stop it, runs in ~/Repos/shop-app → kill
+
+KEEP · 19.7 GB · never enters a plan
+  wt-5646b5          18.0 GB  ~/Repos/shop-app.worktrees/perf-profile
+                              changed 0 days ago
+  wt-3956f1         335.5 MB  [agent] ~/Repos/tv-app/.claude/worktrees/wf_5e21a0c4-118-2
+                              locked worktree
+  agent-claude      448.5 MB  Agent session data
+                              resume, rewind and memory need it; tenx-mess never deletes it
+
+---
+
+$ clean.py plan --tiers finished,rebuildable
+
+tenx-mess plan aeeff416 · 7 steps · up to 22.8 GB · nothing has run yet
+
+ 1. wt-e0b479           3.3 GB  ~/Repos/shop-app.worktrees/fix-checkout-sheet
+      $ git -C ~/Repos/shop-app worktree remove ~/Repos/shop-app.worktrees/fix-checkout-sheet
+      # branch fix/checkout-sheet stays; head 3f1c9e2a7b
+ 2. wt-0b3c39           3.2 GB  ~/Repos/shop-app.worktrees/spike-home-review
+      $ rm -rf ~/Repos/shop-app.worktrees/spike-home-review/node_modules
+      # code and commits stay; reinstall dependencies to work here again
+ 3. wt-689c00           3.3 GB  ~/Repos/shop-app.worktrees/video-dock
+      $ git -C ~/Repos/shop-app worktree remove ~/Repos/shop-app.worktrees/video-dock
+      # branch feature/video-dock stays; head 9d04ab61c2
+ 4. cache-gradle        6.4 GB  Gradle caches
+      $ rm -rf ~/.gradle/caches
+ 5. cache-bun           2.4 GB  bun cache
+      $ bun pm cache rm
+ 6. cache-cocoapods     2.3 GB  CocoaPods cache
+      $ pod cache clean --all
+ 7. cache-npm           1.7 GB  npm cache
+      $ npm cache clean --force
+
+Every step is checked again right before it runs. To run: clean.py run --plan aeeff416
+
+---
+
+$ clean.py run --plan aeeff416
+
+✓  1. wt-e0b479        ~/Repos/shop-app.worktrees/fix-checkout-sheet
+✓  2. wt-0b3c39        ~/Repos/shop-app.worktrees/spike-home-review
+–  3. wt-689c00        ~/Repos/shop-app.worktrees/video-dock  (worktree now has 1 uncommitted file)
+✓  4. cache-gradle     Gradle caches
+✓  5. cache-bun        bun cache
+✓  6. cache-cocoapods  CocoaPods cache
+✓  7. cache-npm        npm cache
+
+6 of 7 steps done · free space 11.8 GB → 31.3 GB (+19.5 GB) · log ~/.tenx-mess/log/clean-20260928-101812-aeeff416.json
+To bring a removed worktree back: git -C <repo> worktree add <path> <branch or head> (both are in the log).

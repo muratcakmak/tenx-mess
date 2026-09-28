@@ -1,0 +1,9 @@
+{
+  "code_roots": ["~/Repos", "~/Developer"],
+  "repo_depth": 3,
+  "stale_days": 14,
+  "dormant_days": 60,
+  "min_size_mb": 50,
+  "use_gh": true,
+  "protected_paths": ["~/Repos/do-not-touch"]
+}

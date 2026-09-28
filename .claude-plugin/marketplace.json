@@ -1,0 +1,14 @@
+{
+  "name": "tenx-mess",
+  "description": "Agent skill that cleans up after coding agents on macOS.",
+  "owner": {
+    "name": "Oguzhan Cakmak"
+  },
+  "plugins": [
+    {
+      "name": "tenx-mess",
+      "source": "./",
+      "description": "Finds the worktrees, node_modules, DerivedData and caches your coding agents left behind, and deletes them only after you approve twice."
+    }
+  ]
+}

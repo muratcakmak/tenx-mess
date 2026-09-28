@@ -1,0 +1,10 @@
+{
+  "name": "tenx-mess",
+  "description": "Finds the worktrees, node_modules, DerivedData and caches your coding agents left behind, and deletes them only after you approve twice.",
+  "version": "0.1.0",
+  "author": { "name": "Oguzhan Cakmak" },
+  "homepage": "https://github.com/muratcakmak/tenx-mess",
+  "repository": "https://github.com/muratcakmak/tenx-mess",
+  "license": "MIT",
+  "keywords": ["disk", "cleanup", "worktrees", "xcode", "macos", "node_modules"]
+}

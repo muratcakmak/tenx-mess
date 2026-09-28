@@ -67,8 +67,9 @@ CACHES = [
      "cmd": ["pnpm", "store", "prune"], "busy": ["pnpm"], "partial": True},
     {"key": "yarn", "name": "Yarn cache", "path": "~/Library/Caches/Yarn",
      "cmd": ["yarn", "cache", "clean"], "busy": ["yarn"]},
+    # `bun pm cache rm` fails outside a project folder, so delete the folder instead.
     {"key": "bun", "name": "bun cache", "path": "~/.bun/install/cache",
-     "cmd": ["bun", "pm", "cache", "rm"], "busy": []},
+     "cmd": None, "busy": ["bun"]},
     {"key": "cocoapods", "name": "CocoaPods cache", "path": "~/Library/Caches/CocoaPods",
      "cmd": ["pod", "cache", "clean", "--all"], "busy": ["pod"]},
     {"key": "homebrew", "name": "Homebrew cache", "path_cmd": ["brew", "--cache"],

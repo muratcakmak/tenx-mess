@@ -12,7 +12,7 @@ REBUILDABLE · 15.1 GB · tools recreate these on the next build or install; sel
   cache-gradle        6.4 GB  Gradle caches
                               rebuilt on next install → delete_dir
   cache-bun           2.4 GB  bun cache
-                              rebuilt on next install; cleaned with `bun pm cache rm` → tool
+                              rebuilt on next install → delete_dir
   cache-cocoapods     2.3 GB  CocoaPods cache
                               rebuilt on next install; cleaned with `pod cache clean --all` → tool
   cache-npm           1.7 GB  npm cache
@@ -56,7 +56,7 @@ tenx-mess plan aeeff416 · 7 steps · up to 22.8 GB · nothing has run yet
  4. cache-gradle        6.4 GB  Gradle caches
       $ rm -rf ~/.gradle/caches
  5. cache-bun           2.4 GB  bun cache
-      $ bun pm cache rm
+      $ rm -rf ~/.bun/install/cache
  6. cache-cocoapods     2.3 GB  CocoaPods cache
       $ pod cache clean --all
  7. cache-npm           1.7 GB  npm cache

@@ -34,7 +34,7 @@ Every command comes from the `CACHES` table in `scripts/common.py`, never from t
 | npm | `~/.npm/_cacache` | `npm cache clean --force` |
 | pnpm | `pnpm store path` | `pnpm store prune` (unused packages only) |
 | Yarn | `~/Library/Caches/Yarn` | `yarn cache clean` |
-| bun | `~/.bun/install/cache` | `bun pm cache rm` |
+| bun | `~/.bun/install/cache` | delete (skipped while bun runs; `bun pm cache rm` fails outside a project) |
 | CocoaPods | `~/Library/Caches/CocoaPods` | `pod cache clean --all` |
 | Homebrew | `brew --cache` | `brew cleanup --prune=all` |
 | Gradle | `~/.gradle/caches` | delete (skipped while a Gradle daemon runs) |

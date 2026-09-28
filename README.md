@@ -40,7 +40,7 @@ Each item lands in a tier: **finished** (PR merged), **rebuildable** (a tool rec
 
 When Claude Code can publish artifacts, steps 2 and 3 happen on a private claude.ai page. It lists every item with its size and reason, lets you switch between removing a worktree and removing only its dependencies, and shows the plan as a sheet with the exact commands. It also works on a phone, which helps when Claude Code runs on a headless Mac over SSH.
 
-The page never runs anything. It writes your approval to the page's own database, and only you, the owner, can write there. Claude then runs `clean.py plan --approval`, which refuses the approval unless its commands match, character for character, what the script would run. When the run ends, the result shows on the page.
+The page never runs anything. It writes your approval to the page's own database, where only you, the owner, can write. Then it sends a comment to Claude, which starts a turn in the Claude Code session watching the page. If no session is watching, you reply `done` in the terminal instead. Claude runs `clean.py plan --approval`, which refuses the approval unless its commands match, character for character, what the script would run. When the run ends, the result shows on the page.
 
 The page holds your repo paths and branch names, and it stays private to you. The template is [`assets/confirm.html`](skills/tenx-mess/assets/confirm.html) and contains no data.
 

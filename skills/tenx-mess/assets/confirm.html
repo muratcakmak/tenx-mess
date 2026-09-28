@@ -178,7 +178,7 @@ button:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var
     kill: "Stop process"
   };
   var app = document.getElementById("app"), dock = document.getElementById("dock");
-  var db = null, isOwner = true, seed = null, approval = null, result = null;
+  var db = null, isOwner = true, seed = null, approval = null, result = null, sent = null;
   var pick = {};  // id -> action or null
   var KEEP_SHOWN = 4;
 
@@ -353,7 +353,8 @@ button:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var
       commands: p.commands
     };
     db.doc("tenx/approval").set(body).then(function () {
-      scrim.hidden = true; approval = body; render();
+      scrim.hidden = true; approval = body; sent = "sending"; render();
+      return wakeClaude(p);
     }, function (e) {
       approveBtn.disabled = false;
       sheetErr.textContent = e && e.code === "invalid_argument"
@@ -362,6 +363,25 @@ button:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var
     });
   });
 
+  // Tell the Claude session watching this page that a plan is approved.
+  // The comment is only a signal: Claude reads the approval from the
+  // database and the script checks it before anything runs.
+  function wakeClaude(p) {
+    var total = p.steps.reduce(function (a, s) { return a + s.o.bytes; }, 0);
+    var text = "tenx-mess: I approved plan " + seed.nonce + " (" + p.steps.length +
+      (p.steps.length === 1 ? " item" : " items") + ", up to " + gb(total) + "). Check it and run it.";
+    return window.claude.use("comments").then(function (cm) {
+      if (!cm) throw new Error("no comments");
+      return cm.canSendToClaude().then(function (can) {
+        if (can !== "available") throw new Error(can);
+        return cm.anchorFor(document.querySelector(".brand")).then(function (anchor) {
+          return cm.sendToClaude({ anchor: anchor, text: text });
+        });
+      });
+    }).then(function () { sent = "sent"; render(); },
+            function () { sent = "manual"; render(); });
+  }
+
   // ---- states ----
   function render() {
     if (!seed) { showState("logo", "No scan yet", "Ask Claude to run /tenx-mess. The scan appears here when it is done."); return; }
@@ -369,6 +389,11 @@ button:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var
     document.getElementById("meta").textContent = "Scan " + when;
     if (result && result.nonce === seed.nonce) { renderResult(); return; }
     if (approval && approval.nonce === seed.nonce) {
+      if (sent === "sending") { showState("spin", "Approved", "Sending your approval to Claude…"); return; }
+      if (sent === "sent") {
+        showState("spin", "Sent to Claude", "Claude checks your approval against the script and runs it. The result shows here when the cleanup ends.");
+        return;
+      }
       var cmd = h("span", "cmd", "done");
       showState("spin", "Approved", "Go back to Claude and reply done. Claude checks your approval against the script, runs it, and the result shows here.", cmd);
       return;

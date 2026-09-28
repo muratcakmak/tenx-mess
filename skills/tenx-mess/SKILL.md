@@ -58,7 +58,7 @@ Keep it to a few lines. The tier table in the scan output already has the detail
 
    Capabilities: `{"db": {"rules": [{"path": "", "read": "view", "write": "owner"}]}, "comments": {}}`
 
-3. With ArtifactData `batch` on that URL: `set` collection `tenx`, doc `seed` from the preview file (`file_path`), and `delete` the docs `tenx/approval` and `tenx/result`.
+3. With ArtifactData `list` on collection `tenx`, read the version of each existing document. Then, with one `batch` on that URL, `set` doc `seed` from the preview file (`file_path`) and `delete` the docs `approval` and `result`. Pin every entry for an existing document with `if_version`, or the batch is refused.
 4. The first time, tell the user that the page is private to them and holds their repo paths and branch names. Then give the link and end your turn with:
 
    > Open the page, pick what to clean, review the plan and type `clean` to approve it. Approving sends it to me here. If nothing happens, reply `done`.

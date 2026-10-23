@@ -21,6 +21,8 @@ On the machine this was built on, one repo had **62 GB in 16 worktrees**. Almost
 
 A normal Mac cleaner sees folder sizes. tenx-mess reads the context around each folder: the git branch, the PR state on GitHub, uncommitted files, the last real activity, and which processes still use it.
 
+**[How tenx-mess works →](https://muratcakmak.github.io/tenx-mess/)** follows one cleanup from scan to log, with an animated diagram of the two approvals and what each step refuses.
+
 ## What it finds
 
 | Detector | Looks at | Offers |
@@ -35,6 +37,8 @@ A normal Mac cleaner sees folder sizes. tenx-mess reads the context around each 
 Each item lands in a tier: **finished** (PR merged), **rebuildable** (a tool recreates it), **review** (your call), **keep** (locked, in use, or recent), or **report**. See [`references/tiers.md`](skills/tenx-mess/references/tiers.md) for the rules.
 
 ## How the confirmation works
+
+The [How It Works page](https://muratcakmak.github.io/tenx-mess/) has the full walkthrough. In short:
 
 1. **Scan.** `scan.py` measures everything and writes a JSON report. It changes nothing.
 2. **Pick.** You choose what to clean. Finished and rebuildable items start selected. Review items start unselected.

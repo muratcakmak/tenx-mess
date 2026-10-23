@@ -82,6 +82,10 @@ Compare the `seconds` field of the two reports. Run the new version first, so a 
 
 Docs and messages use short, plain sentences, like the README. The `description` in `SKILL.md` starts with "Use when" and lists triggers. It never describes the workflow.
 
+## The How It Works page
+
+`docs/index.html` is served by GitHub Pages at https://muratcakmak.github.io/tenx-mess/. Update it in the same PR when you change the flow, the tiers or the safety rules.
+
 ## Commits and pull requests
 
 - Commit subjects are imperative and sentence case, without a prefix. For example: "Write the clean log after every step".

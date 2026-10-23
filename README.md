@@ -125,6 +125,8 @@ python3 -m unittest discover -s tests -v
 
 The tests build throwaway repos under a temporary `HOME` and check the refusals too: a worktree that got dirty after the scan, an edited plan, a symlinked `node_modules`.
 
+The agent itself is checked by behavioral evals in [`evals/`](evals/README.md). They test that it never deletes with its own shell, never runs without your approval, and ignores instructions in a page comment.
+
 ## Contributing
 
 Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first, especially the safety rules. Changes are listed in [CHANGELOG.md](CHANGELOG.md). Report security problems privately, as described in [SECURITY.md](SECURITY.md).

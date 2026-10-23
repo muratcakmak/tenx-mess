@@ -131,6 +131,23 @@ class ClassifyTests(unittest.TestCase):
         self.assertEqual((tier, default), ("review", "worktree_remove"))
 
 
+class DuTreeTests(unittest.TestCase):
+    def test_one_walk_matches_separate_du_calls(self):
+        import common as c
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(os.path.realpath(tmp))
+            for rel, size in [("node_modules/a/b", 300000), ("android/app/build/x", 200000), ("src", 100000)]:
+                (root / rel).mkdir(parents=True)
+                (root / rel / "f").write_bytes(os.urandom(size))
+            rels = ["node_modules", "android/app/build", "ios/Pods"]
+            total, deps = c.du_tree(root, rels)
+            self.assertEqual(total, c.du_bytes(root))
+            self.assertEqual(deps, {"node_modules": c.du_bytes(root / "node_modules"),
+                                    "android/app/build": c.du_bytes(root / "android/app/build"),
+                                    "ios/Pods": 0})
+            self.assertGreater(deps["node_modules"], 0)
+
+
 class EndToEndTests(unittest.TestCase):
     def setUp(self):
         self.s = Sandbox()

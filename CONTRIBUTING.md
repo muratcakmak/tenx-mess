@@ -36,9 +36,9 @@ The code must run on Python 3.9, the version the Xcode command line tools ship a
 
 A change that breaks one of these won't be merged.
 
-- `scan.py` never deletes, moves or edits anything outside `~/.tenx-mess/`.
-- `clean.py` builds every command from the tables in `common.py`, never from the report or the page. An edited report must not be able to inject a command.
-- No `--force`, anywhere. Git refusing a dirty worktree is a feature.
+- `scan.py` never deletes or moves anything. It writes only its report to `~/.tenx-mess/`. Its `git status` calls can refresh a repo's index, as any `git status` does.
+- Program names and flags come only from `clean.py` and the tables in `common.py`, never from the report or the page. Paths, PIDs and simulator IDs from the report are only arguments, and `clean.py run` checks each one again before using it. An edited report must not be able to change what runs.
+- No `--force` on git or on anything that can remove code. Git refusing a dirty worktree is a feature. The one `--force` is `npm cache clean --force`, because npm refuses to clean its cache without it.
 - `clean.py run` checks every step again right before running it, and skips it if anything changed since the plan.
 - Protected paths (`ALWAYS_PROTECTED` and the user's `protected_paths`) are never deleted, and symlinks are never followed.
 - Anything in the `keep` or `report` tier never enters a plan.

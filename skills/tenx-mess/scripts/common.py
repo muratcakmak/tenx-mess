@@ -219,10 +219,33 @@ def du_bytes(path):
         return 0
 
 
+def pmap(fn, items, workers=8):
+    """fn over items on threads, results in input order. The work is subprocesses, so the GIL does not matter."""
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        return list(pool.map(fn, items))
+
+
 def du_many(paths, workers=8):
     paths = list(paths)
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        return dict(zip(paths, pool.map(du_bytes, paths)))
+    return dict(zip(paths, pmap(du_bytes, paths, workers)))
+
+
+def du_tree(root, rels):
+    """(bytes of root, {rel: bytes}) from one du walk.
+
+    Sizing root and then each rel on its own walks every rel twice, and the rels
+    (node_modules, Pods) hold most of the files.
+    """
+    root = str(root)
+    depth = max([r.count("/") + 1 for r in rels] or [0])
+    code, out = run(["du", "-k", "-d", str(depth), root], timeout=600)
+    sizes = {}
+    if code in (0, 1):
+        for line in out.splitlines():
+            kb, _, p = line.partition("\t")
+            if kb.isdigit():
+                sizes[p] = int(kb) * 1024
+    return sizes.get(root, 0), {r: sizes.get(os.path.join(root, r), 0) for r in rels}
 
 
 def human(n):
@@ -334,13 +357,10 @@ def pr_states(repo, branches):
         return None
     try:
         _best_prs(out or "[]", result)
-        for b in branches:
-            if b in result:
-                continue
-            code, out = run(
+        missed = [b for b in branches if b not in result]
+        for code, out in pmap(lambda b: run(
                 ["gh", "pr", "list", "--state", "all", "--head", b, "--json", "headRefName,state,number"],
-                cwd=str(repo), timeout=60,
-            )
+                cwd=str(repo), timeout=60), missed):
             if code == 0 and out:
                 _best_prs(out, result)
     except (ValueError, KeyError):

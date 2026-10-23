@@ -435,7 +435,9 @@ def cmd_result(args, cfg):
     seed_path = c.STATE_DIR / "seed.json"
     nonce = json.loads(seed_path.read_text())["nonce"] if seed_path.exists() else None
     out = {"nonce": nonce, "plan": log["plan"], "finished": log["finished"],
-           "free_before": log["free_before"], "free_after": log["free_after"],
+           "steps_total": log.get("steps_total", len(log["results"])),
+           "free_before": log["free_before"],
+           "free_after": log["free_after"] or c.disk_free(),  # None when the run was killed
            "log": tilde(logs[-1]),
            "results": [{"id": r["id"], "title": r["title"], "action": r["action"],
                         "status": r["status"], "reason": r["reason"]} for r in log["results"]]}
@@ -472,6 +474,10 @@ def cmd_run(args, cfg):
 
     free_before = c.disk_free()
     results = []
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log = {"plan": plan["id"], "finished": None, "free_before": free_before, "free_after": None,
+           "steps_total": len(plan["steps"]), "results": results}
+    log_path = c.LOG_DIR / ("clean-%s-%s.json" % (stamp, plan["id"]))
     for n, s in enumerate(plan["steps"], 1):
         t0 = time.time()
         try:
@@ -486,14 +492,13 @@ def cmd_run(args, cfg):
                         "reason": why, "commands": s["commands"], "seconds": round(time.time() - t0, 1),
                         "branch": s["meta"].get("branch"), "head": s["meta"].get("head"),
                         "repo": s["meta"].get("repo")})
+        # After every step, so a killed run still records how to restore what it removed.
+        c.write_json(log_path, log)
         mark = {"done": "✓", "skipped": "–", "failed": "✗"}[status]
         print("%s %2d. %-16s %s%s" % (mark, n, s["id"], s["title"], ("  (" + why + ")") if why else ""))
 
     free_after = c.disk_free()
-    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    log = {"plan": plan["id"], "finished": stamp, "free_before": free_before, "free_after": free_after,
-           "results": results}
-    log_path = c.LOG_DIR / ("clean-%s-%s.json" % (stamp, plan["id"]))
+    log.update(finished=datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), free_after=free_after)
     c.write_json(log_path, log)
     path.unlink()
 

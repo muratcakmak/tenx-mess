@@ -170,79 +170,83 @@ def scan_worktrees(cfg, repos, procs, use_gh):
         })
 
     live = [(r, e) for r, e in rows if not e.get("prunable") and Path(e["path"]).is_dir()]
-    sizes = c.du_many([e["path"] for _, e in live])
-    dep_paths = []
-    for _, e in live:
-        for rel in dep_dirs(e["path"]):
-            dep_paths.append(str(Path(e["path"]) / rel))
-    dep_sizes = c.du_many(dep_paths)
-    prs_by_repo = {}
-    default_ref = {}
+    live_repos = sorted({r for r, _ in live})
 
-    for repo, e in live:
-        path = e["path"]
-        if use_gh and repo not in prs_by_repo:
-            prs_by_repo[repo] = c.pr_states(
-                repo, [x.get("branch") for r, x in live if r == repo and x.get("branch")])
-        if repo not in default_ref:
-            default_ref[repo] = c.default_remote_ref(repo)
-        files = c.dirty_files(path)
-        dirty = None if files is None else len(files)
-        activity = last_activity(path, files)
-        head = e.get("head")
-        branch = e.get("branch")
-        detached = bool(e.get("detached"))
-        prs = prs_by_repo.get(repo) or {}
-        pr = prs.get(branch) if branch else None
-        ref = default_ref[repo]
-        default_branch = ref.split("/", 1)[-1] if ref else None
-        # A head already inside the default branch has nothing that would be lost.
-        pr_merged = pr is not None and pr["state"] == "MERGED"
-        contained = head is not None and branch != default_branch and c.is_ancestor(repo, head, ref)
-        deps = {rel: dep_sizes.get(str(Path(path) / rel), 0) for rel in dep_dirs(path)}
-        w = {
-            "locked": bool(e.get("locked")),
-            "users": c.users_of(path, procs),
-            "age_days": c.days_since(activity),
-            "merged": pr_merged or contained,
-            "pr": pr,
-            "ref": ref,
-            "detached": detached,
-            "on_branch": detached and head is not None and c.on_any_branch(repo, head),
-            "dirty": dirty,
-            "deps_bytes": sum(deps.values()),
-        }
-        tier, reason, actions, default = classify_worktree(w, cfg["stale_days"])
-        agent = "/.claude/worktrees/" in path
-        items.append({
-            "id": c.item_id("wt", path), "kind": "worktree", "tier": tier,
-            "title": "%s%s" % ("[agent] " if agent else "", tilde(path)),
-            "path": path, "bytes": sizes.get(path, 0), "reason": reason,
-            "actions": actions, "default_action": default,
-            "meta": {
-                "repo": str(repo), "branch": branch, "head": head, "detached": detached,
-                "locked": w["locked"], "dirty": dirty, "age_days": w["age_days"],
-                "pr": pr, "merged": w["merged"], "agent": agent, "deps": deps,
-                "deps_bytes": w["deps_bytes"],
-            },
-        })
-    return items
+    def repo_info(repo):
+        prs = c.pr_states(repo, [x.get("branch") for r, x in live if r == repo and x.get("branch")]) if use_gh else None
+        return prs, c.default_remote_ref(repo)
+
+    info = dict(zip(live_repos, c.pmap(repo_info, live_repos)))
+
+    def inspect(row):
+        repo, e = row
+        try:
+            return inspect_worktree(cfg, procs, repo, e, *info[repo])
+        except OSError:  # removed while scanning, for example by a clean in another session
+            return None
+
+    # ponytail: 8 worktrees at a time and detectors run one after another;
+    # run detectors in parallel too if a measured scan shows the disk keeps up.
+    return items + [i for i in c.pmap(inspect, live) if i]
+
+
+def inspect_worktree(cfg, procs, repo, e, prs, ref):
+    path = e["path"]
+    size, deps = c.du_tree(path, dep_dirs(path))
+    files = c.dirty_files(path)
+    dirty = None if files is None else len(files)
+    activity = last_activity(path, files)
+    head = e.get("head")
+    branch = e.get("branch")
+    detached = bool(e.get("detached"))
+    pr = (prs or {}).get(branch) if branch else None
+    default_branch = ref.split("/", 1)[-1] if ref else None
+    # A head already inside the default branch has nothing that would be lost.
+    pr_merged = pr is not None and pr["state"] == "MERGED"
+    contained = head is not None and branch != default_branch and c.is_ancestor(repo, head, ref)
+    w = {
+        "locked": bool(e.get("locked")),
+        "users": c.users_of(path, procs),
+        "age_days": c.days_since(activity),
+        "merged": pr_merged or contained,
+        "pr": pr,
+        "ref": ref,
+        "detached": detached,
+        "on_branch": detached and head is not None and c.on_any_branch(repo, head),
+        "dirty": dirty,
+        "deps_bytes": sum(deps.values()),
+    }
+    tier, reason, actions, default = classify_worktree(w, cfg["stale_days"])
+    agent = "/.claude/worktrees/" in path
+    return {
+        "id": c.item_id("wt", path), "kind": "worktree", "tier": tier,
+        "title": "%s%s" % ("[agent] " if agent else "", tilde(path)),
+        "path": path, "bytes": size, "reason": reason,
+        "actions": actions, "default_action": default,
+        "meta": {
+            "repo": str(repo), "branch": branch, "head": head, "detached": detached,
+            "locked": w["locked"], "dirty": dirty, "age_days": w["age_days"],
+            "pr": pr, "merged": w["merged"], "agent": agent, "deps": deps,
+            "deps_bytes": w["deps_bytes"],
+        },
+    }
 
 
 def scan_dormant(cfg, repos, procs):
     """Main checkouts with no activity for dormant_days that still hold dependency folders."""
     items = []
-    for repo in repos:
+
+    def candidate(repo):
         rels = dep_dirs(repo)
-        if not rels:
-            continue
-        activity = last_activity(repo)
-        age = c.days_since(activity)
-        if age is None or age < cfg["dormant_days"]:
-            continue
+        age = c.days_since(last_activity(repo)) if rels else None
+        return (repo, rels, age) if age is not None and age >= cfg["dormant_days"] else None
+
+    found = [x for x in c.pmap(candidate, repos) if x]
+    # One pool over every dormant repo; a pool per repo only ever sized 1 to 3 folders at a time.
+    sizes = c.du_many([str(repo / r) for repo, rels, _ in found for r in rels])
+    for repo, rels, age in found:
         users = c.users_of(repo, procs)
-        deps = c.du_many([str(repo / r) for r in rels])
-        deps = {r: deps[str(repo / r)] for r in rels}
+        deps = {r: sizes[str(repo / r)] for r in rels}
         total = sum(deps.values())
         if total < cfg["min_size_mb"] * 1e6:
             continue
@@ -266,6 +270,14 @@ def workspace_path(dd_folder):
     return out if code == 0 and out else None
 
 
+def age_days(p):
+    """Days since p changed, or None when it is gone (Xcode or a clean removed it mid-scan)."""
+    try:
+        return c.days_since(p.stat().st_mtime)
+    except OSError:
+        return None
+
+
 def scan_xcode(cfg):
     items = []
     min_bytes = cfg["min_size_mb"] * 1e6
@@ -276,7 +288,9 @@ def scan_xcode(cfg):
         stale, recent_bytes = [], 0
         for p in folders:
             ws = workspace_path(p)
-            age = c.days_since(p.stat().st_mtime)
+            age = age_days(p)
+            if age is None:
+                continue
             orphan = ws is not None and not Path(ws).exists()
             if orphan or (age is not None and age >= cfg["stale_days"]):
                 stale.append({"path": str(p), "bytes": sizes[str(p)], "workspace": ws,
@@ -300,8 +314,7 @@ def scan_xcode(cfg):
     dev = c.expand(c.XCODE_DEV)
     if dev.is_dir():
         for sup in sorted(dev.glob("* DeviceSupport")):
-            olds = [p for p in sup.iterdir() if p.is_dir()
-                    and (c.days_since(p.stat().st_mtime) or 0) >= 90]
+            olds = [p for p in sup.iterdir() if p.is_dir() and (age_days(p) or 0) >= 90]
             sizes = c.du_many([str(p) for p in olds])
             total = sum(sizes.values())
             if olds and total >= min_bytes:

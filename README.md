@@ -7,6 +7,12 @@
 <p align="center"><b>Your agents ship at 10x speed and leave a 10x mess.</b><br>
 A Claude Code skill that finds what they left on your Mac and deletes it only after you approve twice.</p>
 
+<p align="center">
+  <a href="https://github.com/muratcakmak/tenx-mess/actions/workflows/test.yml"><img src="https://github.com/muratcakmak/tenx-mess/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/muratcakmak/tenx-mess/releases/latest"><img src="https://img.shields.io/github/v/release/muratcakmak/tenx-mess" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/muratcakmak/tenx-mess" alt="MIT license"></a>
+</p>
+
 ---
 
 Parallel agents are great until the disk says 11 GB free. Every task gets a git worktree. Every worktree gets its own 3 GB `node_modules` and `Pods`. Every build writes DerivedData and every install fills a cache. Nobody cleans any of it, because the agent that made it already finished.
@@ -56,6 +62,7 @@ See [`examples/scan-output.txt`](examples/scan-output.txt) for a full terminal s
 - Worktrees are removed with `git worktree remove`, never with `--force`. Git refuses dirty trees, and the branch stays.
 - A plan is hashed. If the plan file is edited after you saw it, `run` refuses it. Plans expire after two hours.
 - Nothing is deleted if a process uses it, if it is a symlink, or if it sits outside the allowed folders. `~`, `~/.claude`, `~/.ssh`, `~/Library`, `~/Documents` and similar are always protected.
+- `run` writes its log after every step, so even a run that is killed partway records the branch and HEAD to bring back each removed worktree.
 - Nothing goes to the Trash. The Trash is on the same disk and frees no space. Rebuildable data is deleted directly, and code goes through git.
 
 ## Install
@@ -92,6 +99,8 @@ python3 skills/tenx-mess/scripts/clean.py plan --tiers finished,rebuildable
 python3 skills/tenx-mess/scripts/clean.py run --plan <id>
 ```
 
+The scan only reads. On a Mac with 40 worktrees across 138 repos, the worktree and repo checks take about a minute. Use `--only worktrees,caches` to scan less.
+
 ## Configure
 
 tenx-mess looks for repos in `~/Repos`, `~/Developer`, `~/Projects`, `~/code`, `~/src` and a few other common folders. To change that, copy [`config.example.json`](skills/tenx-mess/config.example.json) to `~/.config/tenx-mess/config.json`.
@@ -113,6 +122,10 @@ python3 -m unittest discover -s tests -v
 ```
 
 The tests build throwaway repos under a temporary `HOME` and check the refusals too: a worktree that got dirty after the scan, an edited plan, a symlinked `node_modules`.
+
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first, especially the safety rules. Changes are listed in [CHANGELOG.md](CHANGELOG.md). Report security problems privately, as described in [SECURITY.md](SECURITY.md).
 
 ## License
 

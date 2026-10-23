@@ -7,6 +7,7 @@ All notable changes to tenx-mess. The format follows [Keep a Changelog](https://
 ### Added
 
 - Behavioral evals in `evals/`, run with `claude plugin eval`. Six cases check that the agent never deletes or kills with its own shell, never runs a plan without approval, keeps `keep` items out of plans, ignores instructions in a page comment, and loads the skill only when it should.
+- A How It Works page at https://muratcakmak.github.io/tenx-mess/, built from `docs/index.html`.
 
 ## [0.2.0] - 2026-10-23
 

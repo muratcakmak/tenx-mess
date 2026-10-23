@@ -7,4 +7,4 @@ timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill, Bash]
 ---
 
-Free up some disk space on this Mac. My repos are in ./Repos.
+I need to free up disk space before a big build. My repos are in ./Repos.

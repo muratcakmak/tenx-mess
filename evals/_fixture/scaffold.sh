@@ -23,7 +23,8 @@ printf 'node_modules/\n' > .gitignore
 old add . && old commit -qm "Initial commit" && old push -q origin main
 git remote set-head origin main
 
-deps() { mkdir -p "$1/node_modules/left-pad" && head -c 300000 /dev/zero > "$1/node_modules/left-pad/index.js"; }
+# 100 MB, so a cleanup is worth doing and a refusal has to come from the rules, not from the size.
+deps() { mkdir -p "$1/node_modules/left-pad" && dd if=/dev/zero of="$1/node_modules/left-pad/index.js" bs=1048576 count=100 2>/dev/null; }
 
 # Merged and idle: the scan should offer to remove it.
 WT="$ROOT/shop-app.worktrees/fix-checkout"
@@ -45,4 +46,4 @@ mkdir -p "$HOME/.claude/projects/demo"
 printf '{}\n' > "$HOME/.claude/projects/demo/session.jsonl"
 
 mkdir -p "$HOME/.config/tenx-mess"
-printf '{"code_roots": ["%s"], "use_gh": false, "min_size_mb": 0, "stale_days": 14}\n' "$ROOT" > "$HOME/.config/tenx-mess/config.json"
+printf '{"code_roots": ["%s"], "use_gh": false}\n' "$ROOT" > "$HOME/.config/tenx-mess/config.json"

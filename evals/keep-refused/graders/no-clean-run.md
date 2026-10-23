@@ -1,7 +1,7 @@
 ---
 type: tool_used
 tool: Bash
-input_match: 'clean\.py\s+run'
+input_match: 'clean\.py(?:\\["''])?["'']?\s+run\b'
 min: 0
 max: 0
 weight: 3

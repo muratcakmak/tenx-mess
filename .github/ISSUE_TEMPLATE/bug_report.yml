@@ -1,0 +1,45 @@
+name: Bug
+description: Something is classified, sized or cleaned wrong, or a script fails.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Scan reports, plans and the confirmation page contain your repo paths and branch names. **Redact them before pasting.**
+        If tenx-mess deleted something it shouldn't have, use a [private security report](https://github.com/muratcakmak/tenx-mess/security/advisories/new) instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran or asked Claude to do, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The scan summary, the plan, or the error, with paths redacted.
+      render: text
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "26.1"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: python3 --version
+      placeholder: Python 3.9.6
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installed as
+      options:
+        - Claude Code plugin
+        - Plain skill (git clone and symlink)
+    validations:
+      required: true

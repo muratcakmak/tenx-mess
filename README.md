@@ -7,6 +7,12 @@
 <p align="center"><b>Your agents ship at 10x speed and leave a 10x mess.</b><br>
 A Claude Code skill that finds what they left on your Mac and deletes it only after you approve twice.</p>
 
+<p align="center">
+  <a href="https://github.com/muratcakmak/tenx-mess/actions/workflows/test.yml"><img src="https://github.com/muratcakmak/tenx-mess/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/muratcakmak/tenx-mess/releases/latest"><img src="https://img.shields.io/github/v/release/muratcakmak/tenx-mess" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/muratcakmak/tenx-mess" alt="MIT license"></a>
+</p>
+
 ---
 
 Parallel agents are great until the disk says 11 GB free. Every task gets a git worktree. Every worktree gets its own 3 GB `node_modules` and `Pods`. Every build writes DerivedData and every install fills a cache. Nobody cleans any of it, because the agent that made it already finished.
@@ -116,6 +122,10 @@ python3 -m unittest discover -s tests -v
 ```
 
 The tests build throwaway repos under a temporary `HOME` and check the refusals too: a worktree that got dirty after the scan, an edited plan, a symlinked `node_modules`.
+
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first, especially the safety rules. Changes are listed in [CHANGELOG.md](CHANGELOG.md). Report security problems privately, as described in [SECURITY.md](SECURITY.md).
 
 ## License
 

@@ -1,0 +1,37 @@
+name: New target or detector
+description: Suggest a folder, cache or leftover that tenx-mess should find.
+labels: [enhancement]
+body:
+  - type: input
+    id: path
+    attributes:
+      label: Where it lives
+      placeholder: ~/Library/Caches/com.example.tool
+    validations:
+      required: true
+  - type: textarea
+    id: creator
+    attributes:
+      label: What creates it
+      description: The tool, and when it writes there.
+    validations:
+      required: true
+  - type: textarea
+    id: rebuild
+    attributes:
+      label: How it comes back
+      description: What recreates it after deletion, and what the user loses until then. Name the tool's own cleaner if it has one.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: How to tell it is safe to delete
+      description: For example, no process using it, or a project that no longer exists. Say which processes must not be running.
+    validations:
+      required: true
+  - type: input
+    id: size
+    attributes:
+      label: Typical size
+      placeholder: 2-10 GB

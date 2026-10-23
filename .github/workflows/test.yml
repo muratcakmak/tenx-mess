@@ -1,0 +1,25 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # The Python 3.9 that ships with the Xcode command line tools, which is what users run.
+      - name: Tests on /usr/bin/python3
+        run: /usr/bin/python3 --version && /usr/bin/python3 -m unittest discover -s tests -v
+      - name: Tests on the newest python3
+        run: python3 --version && python3 -m unittest discover -s tests -v

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security problem
+    url: https://github.com/muratcakmak/tenx-mess/security/advisories/new
+    about: Anything that makes tenx-mess delete what it shouldn't. Report it privately, not as an issue.

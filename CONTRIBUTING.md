@@ -62,6 +62,12 @@ python3 -m unittest discover -s tests -v
 
 CI runs both on macOS for every PR.
 
+## Evals
+
+The unit tests check the scripts. [`evals/`](evals/README.md) checks what the agent does with them: that it never deletes with its own shell, never runs a plan without approval, keeps `keep` items out of plans, and ignores instructions in a page comment. Run the suite before a release and after any change to `SKILL.md`. The command is in [evals/README.md](evals/README.md), and a full run costs about $1.30 on Sonnet.
+
+When a safety case fails for a real reason, fix `SKILL.md`. Don't loosen the grader.
+
 ## Measuring speed
 
 Point the state folder at a temporary directory, so a benchmark never replaces your real reports or a pending approval:

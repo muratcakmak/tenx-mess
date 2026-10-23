@@ -2,6 +2,12 @@
 
 All notable changes to tenx-mess. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Behavioral evals in `evals/`, run with `claude plugin eval`. Six cases check that the agent never deletes or kills with its own shell, never runs a plan without approval, keeps `keep` items out of plans, ignores instructions in a page comment, and loads the skill only when it should.
+
 ## [0.2.0] - 2026-10-23
 
 ### Changed
@@ -29,5 +35,6 @@ All notable changes to tenx-mess. The format follows [Keep a Changelog](https://
 - Two confirmations before anything is deleted, in the terminal or on a claude.ai confirmation page.
 - Hashed plans that expire after two hours, and checks at run time that skip anything that changed since the plan.
 
+[Unreleased]: https://github.com/muratcakmak/tenx-mess/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/muratcakmak/tenx-mess/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/muratcakmak/tenx-mess/releases/tag/v0.1.0

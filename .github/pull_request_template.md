@@ -8,5 +8,5 @@
 
 - [ ] Tests pass on `/usr/bin/python3` (3.9) and the newest `python3`
 - [ ] A new deletion path has a test that it refuses the unsafe case
-- [ ] Commands are built from the tables in `common.py`, never from the report, and nothing uses `--force`
+- [ ] Program names and flags come from `clean.py` or `common.py`, never from the report, and no new `--force` (`npm cache clean --force` is the only one)
 - [ ] README, `references/targets.md` and `CHANGELOG.md` are updated where needed

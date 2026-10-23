@@ -58,7 +58,7 @@ See [`examples/scan-output.txt`](examples/scan-output.txt) for a full terminal s
 
 ## Safety
 
-- Claude never deletes anything with its own shell commands. All deletion goes through `clean.py`, which builds commands from a fixed table, never from the report.
+- Claude never deletes anything with its own shell commands. All deletion goes through `clean.py`. The programs and flags it runs are fixed in its code, never taken from the report, and every path from the report is checked again before its step runs.
 - Worktrees are removed with `git worktree remove`, never with `--force`. Git refuses dirty trees, and the branch stays.
 - A plan is hashed. If the plan file is edited after you saw it, `run` refuses it. Plans expire after two hours.
 - Nothing is deleted if a process uses it, if it is a symlink, or if it sits outside the allowed folders. `~`, `~/.claude`, `~/.ssh`, `~/Library`, `~/Documents` and similar are always protected.
@@ -73,6 +73,8 @@ As a Claude Code plugin:
 /plugin marketplace add muratcakmak/tenx-mess
 /plugin install tenx-mess@tenx-mess
 ```
+
+To update later, run `claude plugin update tenx-mess@tenx-mess` and start a new session, or use `/plugin` → Installed → tenx-mess → Update now.
 
 Or as a plain skill:
 

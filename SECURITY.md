@@ -10,7 +10,7 @@ Please don't open a public issue. Report it privately through GitHub instead: [r
 
 - `clean.py` deletes, kills or erases anything that is not in the plan the user approved.
 - The plan hash, the approval check or the run-time re-checks can be bypassed.
-- A command can be built from the report, the page or the approval instead of from the fixed tables in `common.py`.
+- The report, the page or the approval can change which program runs or which flags it gets. Paths and IDs from the report are expected arguments, and each is checked again at run time.
 - A protected path is deleted, or a symlink is followed out of a target folder.
 - The confirmation page or its database can be used to approve a plan the owner didn't approve.
 

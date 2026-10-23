@@ -411,7 +411,12 @@ button:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var
       if (r.reason) t.appendChild(h("small", null, r.reason));
       row.appendChild(mark); row.appendChild(t); list.appendChild(row);
     });
-    showState("ok", gb(freed) + " freed", done + " of " + result.results.length + " steps done. Free space went from " + gb(result.free_before) + " to " + gb(result.free_after) + ".", list);
+    var total = result.steps_total || result.results.length;
+    if (!result.finished) {
+      showState("logo", "Cleanup stopped early", done + " of " + total + " steps done before the run stopped. " + gb(freed) + " freed. The log " + result.log + " says what was removed and how to bring a worktree back.", list);
+      return;
+    }
+    showState("ok", gb(freed) + " freed", done + " of " + total + " steps done. Free space went from " + gb(result.free_before) + " to " + gb(result.free_after) + ".", list);
   }
 
   function initPicks() {

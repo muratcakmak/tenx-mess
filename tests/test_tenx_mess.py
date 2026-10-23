@@ -176,6 +176,7 @@ class KilledRunTests(unittest.TestCase):
             log = json.loads(next((state / "log").glob("clean-*.json")).read_text())
             self.assertEqual([(r["id"], r["branch"]) for r in log["results"]], [("wt-1", "b1")])
             self.assertIsNone(log["finished"])
+            self.assertEqual(log["steps_total"], 2)
 
 
 class EndToEndTests(unittest.TestCase):

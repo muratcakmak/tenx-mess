@@ -435,6 +435,7 @@ def cmd_result(args, cfg):
     seed_path = c.STATE_DIR / "seed.json"
     nonce = json.loads(seed_path.read_text())["nonce"] if seed_path.exists() else None
     out = {"nonce": nonce, "plan": log["plan"], "finished": log["finished"],
+           "steps_total": log.get("steps_total", len(log["results"])),
            "free_before": log["free_before"],
            "free_after": log["free_after"] or c.disk_free(),  # None when the run was killed
            "log": tilde(logs[-1]),
@@ -475,7 +476,7 @@ def cmd_run(args, cfg):
     results = []
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     log = {"plan": plan["id"], "finished": None, "free_before": free_before, "free_after": None,
-           "results": results}
+           "steps_total": len(plan["steps"]), "results": results}
     log_path = c.LOG_DIR / ("clean-%s-%s.json" % (stamp, plan["id"]))
     for n, s in enumerate(plan["steps"], 1):
         t0 = time.time()

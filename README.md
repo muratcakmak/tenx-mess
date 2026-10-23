@@ -56,6 +56,7 @@ See [`examples/scan-output.txt`](examples/scan-output.txt) for a full terminal s
 - Worktrees are removed with `git worktree remove`, never with `--force`. Git refuses dirty trees, and the branch stays.
 - A plan is hashed. If the plan file is edited after you saw it, `run` refuses it. Plans expire after two hours.
 - Nothing is deleted if a process uses it, if it is a symlink, or if it sits outside the allowed folders. `~`, `~/.claude`, `~/.ssh`, `~/Library`, `~/Documents` and similar are always protected.
+- `run` writes its log after every step, so even a run that is killed partway records the branch and HEAD to bring back each removed worktree.
 - Nothing goes to the Trash. The Trash is on the same disk and frees no space. Rebuildable data is deleted directly, and code goes through git.
 
 ## Install
@@ -91,6 +92,8 @@ python3 skills/tenx-mess/scripts/scan.py                  # read-only report
 python3 skills/tenx-mess/scripts/clean.py plan --tiers finished,rebuildable
 python3 skills/tenx-mess/scripts/clean.py run --plan <id>
 ```
+
+The scan only reads. On a Mac with 40 worktrees across 138 repos, the worktree and repo checks take about a minute. Use `--only worktrees,caches` to scan less.
 
 ## Configure
 

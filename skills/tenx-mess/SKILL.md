@@ -1,6 +1,6 @@
 ---
 name: tenx-mess
-description: Finds and cleans the disk mess that agentic coding leaves on a Mac: leftover git worktrees (including Claude Code .claude/worktrees), node_modules and Pods in idle worktrees, Xcode DerivedData, simulators, DeviceSupport, package manager caches (npm, pnpm, bun, Yarn, CocoaPods, Homebrew, Gradle, pip, uv) and orphaned dev servers. Deletes only after two user confirmations. Use when the user says "free up disk space", "clean my mac", "disk is full", "remove old worktrees", "DerivedData is huge", "what is eating my disk", or when a build or install fails with ENOSPC or "No space left on device".
+description: Use when the user says "free up disk space", "clean my mac", "disk is full", "remove old worktrees", "DerivedData is huge", "what is eating my disk", or when a build or install fails with ENOSPC or "No space left on device". Covers the disk mess agentic coding leaves on a Mac: leftover git worktrees (including Claude Code .claude/worktrees), node_modules and Pods in idle worktrees, Xcode DerivedData, simulators, DeviceSupport, package manager caches (npm, pnpm, bun, Yarn, CocoaPods, Homebrew, Gradle, pip, uv) and orphaned dev servers.
 ---
 
 # tenx-mess

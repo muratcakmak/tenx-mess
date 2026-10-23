@@ -148,6 +148,36 @@ class DuTreeTests(unittest.TestCase):
             self.assertGreater(deps["node_modules"], 0)
 
 
+class KilledRunTests(unittest.TestCase):
+    def test_killed_run_keeps_log_of_finished_steps(self):
+        import argparse
+        import hashlib
+        import clean
+        import common as c
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp)
+            old = (c.PLAN_DIR, c.LOG_DIR, clean.execute)
+            c.PLAN_DIR, c.LOG_DIR = state / "plans", state / "log"
+            steps = [{"id": "wt-%d" % n, "action": "worktree_remove", "title": "t", "path": "/x",
+                      "bytes": 0, "commands": [], "meta": {"branch": "b%d" % n, "head": "h", "repo": "/r"}}
+                     for n in (1, 2)]
+            pid = hashlib.sha256(json.dumps(steps, sort_keys=True).encode()).hexdigest()[:8]
+            c.write_json(c.PLAN_DIR / ("%s.json" % pid), {"id": pid, "created": time.time(), "steps": steps})
+
+            def execute(step, cfg):
+                if step["id"] == "wt-2":
+                    raise KeyboardInterrupt  # the session ends mid-run
+            clean.execute = execute
+            try:
+                with self.assertRaises(KeyboardInterrupt):
+                    clean.cmd_run(argparse.Namespace(plan=pid), {})
+            finally:
+                c.PLAN_DIR, c.LOG_DIR, clean.execute = old
+            log = json.loads(next((state / "log").glob("clean-*.json")).read_text())
+            self.assertEqual([(r["id"], r["branch"]) for r in log["results"]], [("wt-1", "b1")])
+            self.assertIsNone(log["finished"])
+
+
 class EndToEndTests(unittest.TestCase):
     def setUp(self):
         self.s = Sandbox()
